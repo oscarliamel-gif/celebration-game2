@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Celebration Drag & Drop Challenge</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--accent:#7c3aed;--good:#16803c;--bad:#c62828}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#182848,#7c3aed);color:white;padding:28px 18px;text-align:center}
+header h1{margin:0 0 4px;font-size:30px}header h2{margin:0 0 10px;font-size:20px;font-weight:500}header p{margin:4px 0;font-size:15px}
+.wrap{max-width:1100px;margin:24px auto;padding:0 16px}.card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 6px 20px #00000012}
+.instructions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.step{background:#f0edff;border-radius:12px;padding:12px;text-align:center;font-size:14px}
+.step b{display:block;font-size:18px;margin-bottom:4px}.score{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{background:#eee8ff;padding:8px 14px;border-radius:999px;font-weight:bold}
+button{border:0;border-radius:10px;padding:10px 16px;font-weight:bold;cursor:pointer;background:#182848;color:#fff}
+button:hover{opacity:.9}.grid{display:grid;grid-template-columns:1fr 1.35fr;gap:18px}
+.column h2{font-size:18px;margin-top:0}.items{display:flex;flex-direction:column;gap:9px}.item{padding:13px;background:#fff;border:2px solid #d9deea;border-radius:10px;cursor:grab;user-select:none}.item.dragging{opacity:.45}.item.selected{border-color:var(--accent);background:#f1edff;box-shadow:0 0 0 3px #7c3aed22}.description{min-height:58px;padding:12px;border:2px dashed #b8bfd0;border-radius:10px;background:#fafbfe;display:flex;align-items:center;gap:10px}.description.over{border-color:var(--accent);background:#f1edff}.num{font-weight:bold;color:var(--accent);min-width:25px}.matched{border-style:solid;background:#f7fff9}.correct{border-color:var(--good)!important;background:#effbf3!important}.wrong{border-color:var(--bad)!important;background:#fff1f1!important}.feedback{font-size:13px;font-weight:bold}.hidden{display:none}.finish{margin-top:18px;text-align:center}.result{font-size:20px;font-weight:bold;margin:10px}.small{font-size:13px;color:#667085}
+@media(max-width:750px){.grid{grid-template-columns:1fr}.instructions{grid-template-columns:1fr}.description{min-height:72px}}
+</style>
+</head>
+<body>
+<header>
+<h1>English VI</h1>
+<h2>Mr. Oscar Herrera - CEUTEC</h2>
+<p>Celebration Drag & Drop Challenge</p>
+<p>Match each celebration with the correct description.</p>
+</header>
+
+<div class="wrap">
+<div class="card">
+<div class="score">
+<div><span class="badge">Score: <span id="score">0</span> / 20</span>
+<span class="badge">Matched: <span id="matched">0</span> / 20</span></div>
+<button onclick="resetGame()">Reset Game</button>
+</div>
+<div class="instructions">
+<div class="step"><b>1</b>Tap a celebration.</div>
+<div class="step"><b>2</b>Tap the matching description.</div>
+<div class="step"><b>3</b>Check your score.</div>
+</div>
+</div>
+
+<div class="card grid">
+<section class="column">
+<h2>Celebrations</h2>
+<div class="items" id="celebrations"></div>
+</section>
+<section class="column">
+<h2>Descriptions</h2>
+<div class="items" id="descriptions"></div>
+</section>
+</div>
+
+<div class="card finish">
+<div id="result" class="result"></div>
+<p class="small">On Android: tap a celebration, then tap its matching description. Your score is shown automatically.</p>
+
+</div>
+</div>
+
+<script>
+const data=[
+["Birthday","People celebrate the day they were born with a party, cake, and gifts."],
+["Mother's Day","People show appreciation and love to their mothers with cards, flowers, or gifts."],
+["Father's Day","People honor their fathers and father figures with cards, gifts, or family activities."],
+["Valentine's Day","People celebrate love and friendship by giving cards, flowers, chocolates, or gifts."],
+["Christmas","People celebrate Christmas with decorations, family gatherings, special meals, and gifts."],
+["Halloween","People often wear costumes, decorate their homes, and children may go trick-or-treating."],
+["Thanksgiving","Families gather for a special meal and often express gratitude for the things they have."],
+["New Year's Eve","People celebrate the end of the year with parties, countdowns, and fireworks at midnight."],
+["Easter","Many people celebrate Easter with religious services, family activities, and traditions such as Easter eggs."],
+["Independence Day","People celebrate their country's independence with flags, ceremonies, parades, music, and fireworks."],
+["Carnival","People celebrate with colorful costumes, music, dancing, parades, and street performances."],
+["Earth Day","People focus on protecting the environment through activities such as recycling, planting trees, and cleanups."],
+["International Women's Day","People recognize the achievements and contributions of women and promote equality."],
+["St. Patrick's Day","People celebrate Irish culture with green clothing, parades, music, and cultural events."],
+["Día de los Muertos","Families remember and honor loved ones who have died through traditions, food, flowers, and altars."],
+["Labor Day","People recognize workers and their contributions, and many people enjoy a day off or public activities."],
+["Graduation Day","Students celebrate completing an important stage of education with ceremonies, certificates, and family gatherings."],
+["Wedding Anniversary","A couple celebrates the anniversary of the day they were married, often with a special meal or gift."],
+["Chinese New Year","Families welcome a new lunar year with traditions that can include decorations, family meals, gifts, and celebrations."],
+["Diwali","People celebrate the Festival of Lights with lamps, decorations, family gatherings, sweets, and fireworks."]
+];
+
+let score=0, matched=0;
+const shuffledDescriptions=[...data].sort(()=>Math.random()-.5);
+
+function render(){
+ const c=document.getElementById("celebrations"), d=document.getElementById("descriptions");
+ c.innerHTML=""; d.innerHTML="";
+ data.forEach((x,i)=>{
+  const el=document.createElement("div");
+  el.className="item";el.draggable=true;el.dataset.id=i;el.textContent=x[0];
+  el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",i);el.classList.add("dragging")});
+  el.addEventListener("dragend",()=>el.classList.remove("dragging"));
+  el.addEventListener("click",()=>selectCelebration(i));
+  c.appendChild(el);
+ });
+ shuffledDescriptions.forEach((x)=>{
+  const id=data.findIndex(y=>y[0]===x[0]);
+  const box=document.createElement("div");
+  box.className="description";box.dataset.id=id;
+  box.innerHTML=`<span class="num">${shuffledDescriptions.indexOf(x)+1}.</span><span>${x[1]}</span>`;
+  box.addEventListener("click",()=>tapMatch(id,box));
+  box.addEventListener("dragover",e=>{if(!box.classList.contains("matched")){e.preventDefault();box.classList.add("over")}});
+  box.addEventListener("dragleave",()=>box.classList.remove("over"));
+  box.addEventListener("drop",e=>{
+   e.preventDefault();box.classList.remove("over");
+   if(box.classList.contains("matched"))return;
+   const draggedId=Number(e.dataTransfer.getData("text/plain"));
+   check(draggedId,id,box);
+  });
+  d.appendChild(box);
+ });
+}
+let selectedId=null;
+
+function selectCelebration(id){
+  if(matched===20) return;
+  document.querySelectorAll(".item.selected").forEach(el=>el.classList.remove("selected"));
+  const el=document.querySelector(`.item[data-id="${id}"]`);
+  if(el){el.classList.add("selected");selectedId=id;}
+}
+
+function tapMatch(targetId,box){
+  if(selectedId===null || box.classList.contains("matched")) return;
+  const chosen=selectedId;
+  selectedId=null;
+  check(chosen,targetId,box);
+}
+
+function check(draggedId,targetId,box){
+ const dragged=document.querySelector(`.item[data-id="${draggedId}"]`);
+ if(draggedId===targetId){
+  score++;matched++;
+  box.classList.add("matched","correct");
+  box.innerHTML=`<span class="num">✓</span><span><b>${data[targetId][0]}</b> — ${data[targetId][1]}</span>`;
+  dragged.classList.remove("selected");
+  dragged.remove();
+ }else{
+  box.classList.add("wrong");
+  setTimeout(()=>box.classList.remove("wrong"),700);
+ }
+ update();
+ if(matched===20){
+  document.getElementById("result").textContent=`Excellent! You matched all 20 celebrations. Final score: ${score}/20`;
+ }
+}
+function update(){document.getElementById("score").textContent=score;document.getElementById("matched").textContent=matched}
+function resetGame(){score=0;matched=0;selectedId=null;document.getElementById("result").textContent="";render();update()}
+function showAnswers(){
+ document.querySelectorAll(".description").forEach(box=>{
+  const id=Number(box.dataset.id);
+  if(!box.classList.contains("matched"))box.innerHTML=`<span class="num">Answer:</span><span><b>${data[id][0]}</b> — ${data[id][1]}</span>`;
+ });
+}
+render();
+</script>
+</body>
+</html>
